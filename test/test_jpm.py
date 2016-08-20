@@ -8,7 +8,10 @@ from xlrd import open_workbook
 from jpm.utility import get_current_path
 from jpm.open_jpm import read_jpm, read_date, extract_account_info, \
                             read_holding_fields, read_holding_position, \
-                            read_holdings_total, validate_holdings_total
+                            read_holdings_total, validate_holdings_total, \
+                            read_holdings
+
+
 
 class TestJPM(unittest2.TestCase):
 
@@ -180,6 +183,23 @@ class TestJPM(unittest2.TestCase):
 
 
 
+    def test_read_holding_total2(self):
+        filename = get_current_path() + '\\samples\\statement.xls'
+        wb = open_workbook(filename=filename)
+        ws = wb.sheet_by_name('Sheet1')
+        row = 192 # look at the holdings total at E193
+
+        n, holdings_total = read_holdings_total(ws, row)
+        self.assertEqual(n, 2)
+        self.assertAlmostEqual(holdings_total['awaiting_receipt'], 1000000)
+        self.assertAlmostEqual(holdings_total['settled_units'], 678902100)
+        self.assertAlmostEqual(holdings_total['total_units'], 679746900)
+        self.assertAlmostEqual(holdings_total['awaiting_delivery'], 155200)
+        self.assertAlmostEqual(holdings_total['current_face_settled'], 0)
+        self.assertAlmostEqual(holdings_total['current_face_total'], 0)
+
+
+
     def test_validate_holding_position(self):
         filename = get_current_path() + '\\samples\\statement.xls'
         wb = open_workbook(filename=filename)
@@ -200,25 +220,40 @@ class TestJPM(unittest2.TestCase):
 
         try:
             validate_holdings_total(holdings, holdings_total)
-        except:
+        except: # the function should not raise an exception
             self.fail('validate_holdings_total() raises an exception')
 
 
 
-    def test_read_holding_total2(self):
+    def test_read_holdings(self):
+        """
+        Test the read_holdings function.
+        """
         filename = get_current_path() + '\\samples\\statement.xls'
         wb = open_workbook(filename=filename)
         ws = wb.sheet_by_name('Sheet1')
-        row = 192 # look at the holdings total at E193
+        
+        row = 8 # the holdings section starts at A9
+        holdings = []
+        n = read_holdings(ws, row, holdings)
+        self.assertEqual(n, 186)    # it should have read 186 rows
+        self.validate_equity_holdings(holdings)
 
-        n, holdings_total = read_holdings_total(ws, row)
-        self.assertEqual(n, 2)
-        self.assertAlmostEqual(holdings_total['awaiting_receipt'], 1000000)
-        self.assertAlmostEqual(holdings_total['settled_units'], 678902100)
-        self.assertAlmostEqual(holdings_total['total_units'], 679746900)
-        self.assertAlmostEqual(holdings_total['awaiting_delivery'], 155200)
-        self.assertAlmostEqual(holdings_total['current_face_settled'], 0)
-        self.assertAlmostEqual(holdings_total['current_face_total'], 0)
+
+
+    def test_read_holdings2(self):
+        """
+        Test the read_holdings function.
+        """
+        filename = get_current_path() + '\\samples\\statement.xls'
+        wb = open_workbook(filename=filename)
+        ws = wb.sheet_by_name('Sheet1')
+        
+        row = 210 # the holdings section starts at A211
+        holdings = []
+        n = read_holdings(ws, row, holdings)
+        self.assertEqual(n, 81)    # it should have read 81 rows
+        self.validate_bond_holdings(holdings)
 
 
 
@@ -245,7 +280,7 @@ class TestJPM(unittest2.TestCase):
 
     def validate_bond_position(self, position):
         """
-        Validate the equity position read from 'holding_sample.xls'
+        Validate the bond position read from 'holding_sample.xls'
         """
         self.assertEqual(len(position), 14)
 
@@ -263,3 +298,91 @@ class TestJPM(unittest2.TestCase):
         self.assertEqual(position['total_units'], 8000000)
         self.assertAlmostEqual(position['coupon_rate'], 5.99/100)
         self.assertEqual(position['maturity_date'], datetime.datetime(2022,5,11))
+
+
+
+    def validate_equity_holdings(self, holdings):
+        """
+        Validate the equity holdings from account 48029 in 'statement.xls'
+        """
+        self.assertEqual(len(holdings), 36) # 36 positions
+
+        position = holdings[35] # take the last position
+        self.assertEqual(position['security_id'], 'B1L3XL6')
+        self.assertEqual(position['security_name'], 'ZHUZHOU CRRC TIMES ELECTRIC CO LTD')
+        self.assertEqual(position['isin'], 'CNE1000004X4')
+        self.assertEqual(position['regional_or_sub_account'], '002')
+        self.assertEqual(position['location_or_nominee'], '0WX')
+        self.assertEqual(position['country'], 'HK')
+        self.assertEqual(position['awaiting_receipt'], 0)
+        self.assertEqual(position['awaiting_delivery'], 0)
+        self.assertEqual(position['collateral_units'], 0)
+        self.assertEqual(position['borrowed_units'], 0)
+        self.assertEqual(position['settled_units'], 150000)
+        self.assertEqual(position['total_units'], 150000)
+
+        position = holdings[14] # take the 15th position
+        self.assertEqual(position['security_id'], '6193766')
+        self.assertEqual(position['security_name'], 'CHINA RESOURCES LAND LTD COMMON STOCK HKD 0.1')
+        self.assertEqual(position['isin'], 'KYG2108Y1052')
+        self.assertEqual(position['regional_or_sub_account'], '002')
+        self.assertEqual(position['location_or_nominee'], '0WX')
+        self.assertEqual(position['country'], 'KY')
+        self.assertEqual(position['awaiting_receipt'], 0)
+        self.assertEqual(position['awaiting_delivery'], 52000)
+        self.assertEqual(position['collateral_units'], 0)
+        self.assertEqual(position['borrowed_units'], 0)
+        self.assertEqual(position['settled_units'], 1268000)
+        self.assertEqual(position['total_units'], 1216000)
+
+        position = holdings[0]
+        self.validate_equity_position(position)
+
+
+
+    def validate_bond_holdings(self, holdings):
+        """
+        Validate the bond holdings from account 48195 in 'statement.xls'
+        """
+        self.assertEqual(len(holdings), 15) # 15 positions
+
+        position = holdings[0]
+        self.validate_bond_position(position)
+
+        position = holdings[13]
+        self.assertEqual(len(position), 16)
+        self.assertEqual(position['security_id'], 'BCLBGG3')
+        self.assertEqual(position['security_name'], 'RUWAIS POWER CO PJSC NOTES FIXED 6% 31/AUG/2036 USD 1000')
+        self.assertEqual(position['isin'], 'USM8220VAA28')
+        self.assertEqual(position['regional_or_sub_account'], '130')
+        self.assertEqual(position['location_or_nominee'], '590')
+        self.assertEqual(position['country'], 'AE')
+        self.assertEqual(position['awaiting_receipt'], 0)
+        self.assertEqual(position['awaiting_delivery'], 0)
+        self.assertEqual(position['collateral_units'], 0)
+        self.assertEqual(position['borrowed_units'], 0)
+        self.assertEqual(position['settled_units'], 5000000)
+        self.assertEqual(position['total_units'], 5000000)
+        self.assertEqual(position['current_face_settled'], 5000000)
+        self.assertEqual(position['current_face_total'], 5000000)
+        self.assertAlmostEqual(position['coupon_rate'], 6/100)
+        self.assertEqual(position['maturity_date'], datetime.datetime(2036,8,31))
+
+        position = holdings[14]
+        self.assertEqual(len(position), 14)
+        self.assertEqual(position['security_id'], 'B1TMD93')
+        self.assertEqual(position['security_name'], 'SUN HUNG KAI PROPERTIES CAPITAL MARKET LTD MEDIUM TERM NOTE FIXED 5.375% 08/MAR/2017 USD 1000')
+        self.assertEqual(position['isin'], 'XS0290534212')
+        self.assertEqual(position['regional_or_sub_account'], '130')
+        self.assertEqual(position['location_or_nominee'], '590')
+        self.assertEqual(position['country'], 'KY')
+        self.assertEqual(position['awaiting_receipt'], 0)
+        self.assertEqual(position['awaiting_delivery'], 0)
+        self.assertEqual(position['collateral_units'], 0)
+        self.assertEqual(position['borrowed_units'], 0)
+        self.assertEqual(position['settled_units'], 1000000)
+        self.assertEqual(position['total_units'], 1000000)
+        self.assertAlmostEqual(position['coupon_rate'], 5.375/100)
+        self.assertEqual(position['maturity_date'], datetime.datetime(2017,3,8))
+
+
