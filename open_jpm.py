@@ -181,13 +181,17 @@ def read_account(ws, row, port_values):
 
 			# is the following section a holdings section (0 or 1)
 			if isinstance(cell_value, str) and cell_value == 'Security ID':
-				n = read_holdings(ws, row+rows_read, account)
+				holdings = []
+				account['holdings'] = holdings
+				n = read_holdings(ws, row+rows_read, holdings)
 				rows_read = rows_read + n
 
 			# is the following section a cash section (always, either after
 			# the holding section or directly after the account information)
 			if isinstance(cell_value, str) and cell_value == 'Branch Code':
-				n = read_cash(ws, row+rows_read, account)
+				cash = []
+				account['cash'] = cash
+				n = read_cash(ws, row+rows_read, cash)
 				rows_read = rows_read + n
 				break	# finish reading this account
 
@@ -203,7 +207,7 @@ def read_account(ws, row, port_values):
 
 
 
-def read_holdings(ws, row, account):
+def read_holdings(ws, row, holdings):
 	"""
 	Read the holdings section. Each holdings section will consist of
 	the following:
@@ -226,14 +230,17 @@ def read_holdings(ws, row, account):
 	# read each holding position
 	while (row+rows_read < ws.nrows):
 		if is_holdings_subtotal(ws, row+rows_read):
-			n = read_holdings_total(ws, row+rows_read, account)
+			n, holdings_total = read_holdings_total(ws, row+rows_read)
+			validate_holdings_total(holdings, holdings_total)
 			rows_read = rows_read + n
 			break
 
 		while (is_blank_line(ws, row+rows_read)):
 			rows_read = rows_read + 1
 
-		read_holding_position(ws, row+rows_read, rows_each_holding, coordinates, fields, account)
+		# if it is not a blank line, not a holding sub total,
+		# then it must be a holding position
+		read_holding_position(ws, row+rows_read, coordinates, fields, holdings)
 		rows_read = rows_read + rows_each_holding
 		# end of while loop
 		
@@ -323,7 +330,12 @@ def read_holding_fields(ws, row):
 				raise ValueError('data field not handled')
 
 			fields.append(fld)
-			coordinates.append((rows_read, column))
+			if fld in ['coupon_rate', 'maturity_date', 'pool_number']:
+				# in the actual holding position, the row offset for these
+				# three fields are not the same as the holding fields.
+				coordinates.append((rows_read-1, column))
+			else:
+				coordinates.append((rows_read, column))
 			# end of for loop
 
 		rows_read = rows_read + 1
@@ -332,6 +344,180 @@ def read_holding_fields(ws, row):
 		# end of while loop
 
 	return rows_read, coordinates, fields
+
+
+
+def read_holding_position(ws, row, coordinates, fields, holdings):
+	"""
+	Read a holding position and save it into the holdings object.
+	"""
+	position = {}
+
+	i = 0
+	for fld in fields:
+		row_offset, col_offset = coordinates[i]
+		i = i + 1
+		cell_value = ws.cell_value(row+row_offset, col_offset)
+		if isinstance(cell_value, str):
+			cell_value = str.strip(cell_value)
+
+		if fld in ['security_id', 'security_name', 'isin', 
+					'regional_or_sub_account', 'location_or_nominee',
+					'country']:	# mandatory fields whose value is string
+
+			if isinstance(cell_value, str):
+				if cell_value == '':
+					logger.error('read_holding_position(): field {0} is empty'.
+								format(fld))
+					raise ValueError('field {0} is empty'.format(fld))
+				else:
+					position[fld] = cell_value
+			else:
+				logger.error('read_holding_position(): invalid type for field {0}, value={1}'.
+								format(fld, cell_value))
+				raise TypeError('invalid data type for field {0}'.format(fld))
+		
+		elif fld in ['awaiting_receipt', 'settled_units', 'total_units',
+						'awaiting_delivery', 'collateral_units', 
+						'borrowed_units']:	# mandatory fields whose
+											# value is float
+
+			if isinstance(cell_value, float):
+				position[fld] = cell_value
+			else:
+				logger.error('read_holding_position(): invalid type for field {0}, value={1}'.
+								format(fld, cell_value))
+				raise TypeError('invalid data type for field {0}'.format(fld))
+		
+		elif fld in ['occ_id', 'coupon_rate', 'maturity_date', 'pool_number',
+						'current_face_settled', 'current_face_total']:
+			
+			# optional fields
+			if isinstance(cell_value, str) and cell_value == '':
+				pass	# if they are not there, skip it.
+
+			elif fld in ['coupon_rate', 'maturity_date', 
+							'current_face_settled', 'current_face_total']:
+
+				if isinstance(cell_value, float):
+					if fld == 'maturity_date':
+						datemode = get_datemode()
+						position[fld] = xldate_as_datetime(cell_value, datemode)
+					elif fld == 'coupon_rate':
+						position[fld] = cell_value/100
+					else:
+						position[fld] = cell_value
+				else:
+					logger.error('read_holding_position(): invalid type for field {0}, value={1}'.
+								format(fld, cell_value))
+					raise TypeError('invalid data type for field {0}'.format(fld))
+
+			elif fld in ['occ_id', 'pool_number']:
+
+				if isinstance(cell_value, str):
+					position[fld] = cell_value
+				else:
+					logger.error('read_holding_position(): invalid type for field {0}, value={1}'.
+								format(fld, cell_value))
+					raise TypeError('invalid data type for field {0}'.format(fld))
+
+		else:	# unhandled field names
+			logger.error('read_holding_position(): unhandled field {0}'.format(fld))
+			raise TypeError('invalid field name: {0}'.format(fld))
+
+	# end of for loop
+
+	holdings.append(position)
+
+
+
+def read_holdings_total(ws, row):
+	"""
+	Read the sub total of all holdings in an account
+
+	The function returns the number of rows read, the the holdings_total
+	holding object. This holding object is then used to verify holding
+	positions are read properly.
+	"""
+	holdings_total = {}
+	fields = ['awaiting_receipt', 'settled_units', 'total_units',
+	'awaiting_delivery', 'current_face_settled', 'current_face_total']
+
+	i = 0
+	for r in range(row, row+2):
+		for column in range(5, 8):
+			cell_value = ws.cell_value(r, column)
+			if isinstance(cell_value, str) and str.strip(cell_value) == '':
+				cell_value = 0
+
+			try:
+				holdings_total[fields[i]] = float(cell_value)
+			except ValueError:	# the input could be a string in the form
+								# of 1,234.88, remove the ','
+				cell_value = cell_value.replace(',', '')
+				holdings_total[fields[i]] = float(cell_value)
+
+			i = i + 1
+
+	# end of for loop
+	return 2, holdings_total
+
+
+
+def validate_holdings_total(holdings, holdings_total):
+        """
+        Add up the six fields in each position:
+
+        'awaiting_receipt', 'settled_units', 'total_units',
+        'awaiting_delivery', 'current_face_settled', 'current_face_total'
+
+        Then compare it to the sub total, make sure they are equal.
+        """
+        fields = ['awaiting_receipt', 'settled_units', 'total_units',
+        'awaiting_delivery', 'current_face_settled', 'current_face_total']
+
+        for field in fields:
+            sub_total = calculate_sub_total(field, holdings)
+            if abs(sub_total - holdings_total[field]) > 0.000001:
+            	logger.error('validate_holdings_total(): sub total does not match for field {0}: {1} != {2}'.
+            					format(field, sub_total, holdings_total[field]))
+            	raise ValueError('inconsisten sub total for field {0}'.
+            						format(field))
+
+
+
+def calculate_sub_total(field, holdings):
+	"""
+	Go through each position in the holdings, add up the number in
+	'field'.
+	"""
+	sub_total = 0
+	for position in holdings:
+		try:
+			n = position[field]
+		except KeyError:
+			n = 0
+
+		sub_total = sub_total + n
+
+	return sub_total
+
+
+
+def is_holdings_subtotal(ws, row):
+	"""
+	Tell whether this is a holdings subtotal line, this line has the 
+	first 4 cells empty, the fifth cell contains 'Totals: '
+	"""
+	for column in range(4):
+		if not is_empty_cell(ws, row, column):
+			return False
+
+	cell_value = ws.cell_value(row, 4)
+	if isinstance(cell_value, str) and cell_value.startswith('Totals:'):
+		return True
+	else:
+		return False
 
 
 
