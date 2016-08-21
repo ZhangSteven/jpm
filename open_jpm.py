@@ -166,42 +166,45 @@ def read_account(ws, row, port_values):
 	while (row+rows_read < ws.nrows):
 
 		cell_value = ws.cell_value(row+rows_read, 0)
-
-		# detect start of an account
 		if isinstance(cell_value, str) and cell_value.startswith('Account:'):
-			account_code, account_name = extract_account_info(cell_value)
-			account = {}
-			port_values[len(port_values)+1] = account
-			account['account_code'] = account_code
-			account['account_name'] = account_name
-
-			# move to next row
-			rows_read = rows_read + 1
-			cell_value = ws.cell_value(row+rows_read, 0)
-
-			# is the following section a holdings section (0 or 1)
-			if isinstance(cell_value, str) and cell_value == 'Security ID':
-				holdings = []
-				account['holdings'] = holdings
-				n = read_holdings(ws, row+rows_read, holdings)
-				rows_read = rows_read + n
-
-			# is the following section a cash section (always, either after
-			# the holding section or directly after the account information)
-			if isinstance(cell_value, str) and cell_value == 'Branch Code':
-				cash = []
-				account['cash'] = cash
-				n = read_cash(ws, row+rows_read, cash)
-				rows_read = rows_read + n
-				break	# finish reading this account
-
-			elif isinstance(cell_value, str) and cell_value == 'No Data for this Account':
-				rows_read = rows_read + 1
-				break	# finish reading this account, no information
-
+			break	# account starts
 
 		rows_read = rows_read + 1
 		# end of while loop
+
+	account_code, account_name = extract_account_info(cell_value)
+	account = {}
+	accounts = retrieve_or_create(port_values, 'accounts')
+	accounts.append(account)
+	account['account_code'] = account_code
+	account['account_name'] = account_name
+	rows_read = rows_read + 1
+	cell_value = ws.cell_value(row+rows_read, 0)
+
+	# if the following section is a holdings section (there may be
+	# 0 or 1 holding section)
+	if isinstance(cell_value, str) and cell_value == 'Security ID':
+		holdings = []
+		account['holdings'] = holdings
+		n = read_holdings(ws, row+rows_read, holdings)
+		rows_read = rows_read + n
+		cell_value = ws.cell_value(row+rows_read, 0)
+
+	# if the following section a cash section (there is always a cash
+	# section, either following a holding section or directly following
+	# the account information
+	if isinstance(cell_value, str) and cell_value == 'Branch Code':
+		cash = []
+		account['cash'] = cash
+		n = read_cash(ws, row+rows_read, cash)
+		rows_read = rows_read + n
+
+	elif isinstance(cell_value, str) and cell_value == 'No Data for this Account':
+		rows_read = rows_read + 1
+
+	else:
+		logger.error('read_account(): unexpected sub section in row {0}'.
+						format(row+rows_read))
 
 	return rows_read
 
@@ -461,6 +464,131 @@ def read_holdings_total(ws, row):
 
 	# end of for loop
 	return 2, holdings_total
+
+
+
+def read_cash(ws, row, cash):
+	"""
+	Read the cash positions for each account
+	"""
+	rows_read = 0
+
+	fields = read_cash_fields(ws, row)
+	rows_read = rows_read + 1
+
+	# read each holding position
+	while (row+rows_read < ws.nrows):
+
+		while (is_blank_line(ws, row+rows_read)):
+			rows_read = rows_read + 1
+
+		try:
+			n = read_cash_position(ws, row+rows_read, fields, cash)
+			rows_read = rows_read + n
+		except (ValueError,TypeError):	# this line does not look like a valid
+										# cash position, stop reading
+			logger.info('read_cash(): row {0} is not a cash position'.
+							format(row+rows_read))
+			break
+
+		# end of while loop
+
+	return rows_read
+
+
+
+def read_cash_fields(ws, row):
+	"""
+	Read the data fields in a cash position
+	"""
+	fields = []
+
+	for column in range(10):	# read up to column J
+		if is_empty_cell(ws, row, column):
+			fld = 'empty_field'
+			fields.append(fld)
+			continue
+
+		cell_value = ws.cell_value(row, column)
+		if not isinstance(cell_value, str):	# data field name needs to
+											# be string
+			logger.error('read_cash_fields(): invalid cash field: {0}'.
+							format(cell_value))
+			raise ValueError('cash field not a string')
+
+		if cell_value == 'Branch Code':
+			fld = 'branch_code'
+		elif cell_value == 'Branch Name':
+			fld = 'branch_name'
+		elif cell_value == 'Cash Account':
+			fld = 'account_number'
+		elif cell_value == 'Cash Account Name':
+			fld = 'account_name'
+		elif cell_value == 'Local CCY':
+			fld = 'currency'
+		elif cell_value == 'DGSD Eligible':
+			fld = 'dgsd_eligible'
+		elif cell_value == 'Opening Cash Balance':
+			fld = 'opening_balance'
+		elif cell_value == 'Closing Cash Balance':
+			fld = 'closing_balance'
+		else:	# data field not handled
+			logger.error('read_cash_fields(): unhandled cash field: {0}'.
+							format(cell_value))
+			raise ValueError('cash field not handled')
+
+		fields.append(fld)
+
+
+	return fields
+
+
+
+def read_cash_position(ws, row, fields, cash):
+	"""
+	Read a cash position
+	"""
+	position = {}
+	column = -1
+	for field in fields:
+		column = column + 1
+		if field == 'empty_field':	# ignore
+			continue
+
+		cell_value = ws.cell_value(row, column)
+		# logger.debug(cell_value)
+		if field in ['branch_code', 'branch_name', 'account_number', 
+						'account_name', 'currency', 'dgsd_eligible']:
+
+			if not isinstance(field, str):
+				logger.error('read_cash_position(): field {0} not a string, value = {1}'.
+								format(field, cell_value))
+				raise TypeError('invalid type for field {0}'.format(field))
+
+			elif str.strip(cell_value) == '':
+				logger.error('read_cash_position(): field {0} is empty'.
+								format(field))
+				raise ValueError('field {0} is empty'.format(field))
+
+			position[field] = str.strip(cell_value)
+
+		elif field in ['opening_balance', 'closing_balance']:
+			try:
+				position[field] = float(cell_value)
+			except ValueError:
+				logger.error('read_cash_position(): field {0} cannot be converted to float, value = {1}'.
+								format(field, cell_value))
+				raise TypeError('failed to read field {0} as float number'.format(field))
+
+		else:	# unexpected field
+			logger.error('read_cash_position(): unexpected field {0}'.
+								format(field))
+			raise ValueError('unexpected field {0}'.format(field))
+
+	# end of for loop
+
+	cash.append(position)
+	return 1	# read 1 row
 
 
 

@@ -9,7 +9,8 @@ from jpm.utility import get_current_path
 from jpm.open_jpm import read_jpm, read_date, extract_account_info, \
                             read_holding_fields, read_holding_position, \
                             read_holdings_total, validate_holdings_total, \
-                            read_holdings
+                            read_holdings, read_cash_fields, \
+                            read_cash_position, read_cash, read_account
 
 
 
@@ -257,6 +258,135 @@ class TestJPM(unittest2.TestCase):
 
 
 
+    def test_read_cash_fields(self):
+        """
+        Test the read_cash_fields() function.
+        """
+        filename = get_current_path() + '\\samples\\statement.xls'
+        wb = open_workbook(filename=filename)
+        ws = wb.sheet_by_name('Sheet1')
+        
+        row = 194 # the cash fields starts at A195
+        cash_fields = ['branch_code', 'branch_name', 'empty_field', 
+                        'empty_field', 'account_number', 'account_name', 
+                        'currency', 'dgsd_eligible', 'opening_balance', 
+                        'closing_balance']
+        
+        fields = read_cash_fields(ws, row)
+        self.assertEqual(len(fields), 10)
+        for i in range(10):
+            self.assertEqual(cash_fields[i], fields[i])
+
+
+
+    def test_read_cash_position(self):
+        """
+        Test the read_cash_fields() function.
+        """
+        filename = get_current_path() + '\\samples\\statement.xls'
+        wb = open_workbook(filename=filename)
+        ws = wb.sheet_by_name('Sheet1')
+        
+        row = 194 # the cash fields starts at A195
+        fields = read_cash_fields(ws, row)
+
+        row = 196 # the cash position starts at A197
+        cash = []
+        n = read_cash_position(ws, row, fields, cash)
+        self.assertEqual(n, 1)
+        self.assertEqual(len(cash), 1)
+        self.validate_cash_position(cash[0])
+
+
+
+    def test_read_cash(self):
+        """
+        Test the read_cash_fields() function.
+        """
+        filename = get_current_path() + '\\samples\\statement.xls'
+        wb = open_workbook(filename=filename)
+        ws = wb.sheet_by_name('Sheet1')
+        
+        row = 194 # the cash fields starts at A195
+        cash = []
+        n = read_cash(ws, row, cash)
+        self.assertEqual(n, 7)
+        self.validate_cash_holdings(cash)
+
+
+
+    def test_read_account(self):
+        """
+        Test the read_cash_fields() function.
+        """
+        filename = get_current_path() + '\\samples\\statement.xls'
+        wb = open_workbook(filename=filename)
+        ws = wb.sheet_by_name('Sheet1')
+        
+        row = 7 # the cash fields starts at A8
+        port_values = {}
+        n = read_account(ws, row, port_values)
+        self.assertEqual(n, 194)
+
+        accounts = port_values['accounts']
+        self.assertEqual(len(accounts), 1)
+        self.validate_account(accounts[0])
+        
+
+
+    def validate_account(self, account):
+        """
+        Validate the first account (48029) in statement.xls
+        """
+        self.assertEqual(account['account_code'], '48029')
+        self.assertEqual(account['account_name'], 
+                    'CLT - CLI HK BR (CLASS A-HK) TRUST FUND')
+
+        cash = account['cash']
+        self.validate_cash_holdings(cash)
+
+        holdings = account['holdings']
+        self.validate_equity_holdings(holdings)
+
+
+
+    def validate_cash_holdings(self, cash):
+        """
+        Validate the cash holdings from account 48029 in
+        'holding_sample.xls'
+        """
+        self.assertEqual(len(cash), 3)
+        position = cash[0]
+        self.validate_cash_position(position)
+
+        position = cash[2]
+        self.assertEqual(position['branch_code'], '671')
+        self.assertEqual(position['branch_name'], 'JPMCBNALB')
+        self.assertEqual(position['account_number'], '37329803')
+        self.assertEqual(position['account_name'], 'USD')
+        self.assertEqual(position['currency'], 'USD')
+        self.assertEqual(position['dgsd_eligible'], 'Y')
+        self.assertAlmostEqual(position['opening_balance'], 57221400.84)
+        self.assertAlmostEqual(position['closing_balance'], 57221400.84)
+
+
+
+    def validate_cash_position(self, position):
+        """
+        Validate a cash position read from 'holding_sample.xls'
+        """
+        self.assertEqual(len(position), 8)  # should have 8 fields
+        self.assertEqual(position['branch_code'], '671')
+        self.assertEqual(position['branch_name'], 'JPMCBNALB')
+        self.assertEqual(position['account_number'], '81015067')
+        self.assertEqual(position['account_name'], 'CNY')
+        self.assertEqual(position['currency'], 'CNY')
+        self.assertEqual(position['dgsd_eligible'], 'Y')
+        self.assertAlmostEqual(position['opening_balance'], 174893227.84)
+        self.assertAlmostEqual(position['closing_balance'], 174893227.84)
+
+
+
     def validate_equity_position(self, position):
         """
         Validate the equity position read from 'holding_sample.xls'
@@ -384,5 +514,3 @@ class TestJPM(unittest2.TestCase):
         self.assertEqual(position['total_units'], 1000000)
         self.assertAlmostEqual(position['coupon_rate'], 5.375/100)
         self.assertEqual(position['maturity_date'], datetime.datetime(2017,3,8))
-
-
