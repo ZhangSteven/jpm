@@ -331,7 +331,27 @@ class TestJPM(unittest2.TestCase):
         accounts = port_values['accounts']
         self.assertEqual(len(accounts), 1)
         self.validate_account(accounts[0])
-        
+
+
+
+    def test_read_jpm(self):
+        """
+        Test read_jpm()
+        """
+        filename = get_current_path() + '\\samples\\statement.xls'
+        wb = open_workbook(filename=filename)
+        ws = wb.sheet_by_name('Sheet1')
+        port_values = {}
+
+        read_jpm(ws, port_values)
+        self.assertEqual(port_values['date'], datetime.datetime(2016,7,6))
+        accounts = port_values['accounts']
+        self.assertEqual(len(accounts), 12) # 6 accounts in total, each
+                                            # account is presented twice in
+                                            # the excel, one with holdings
+                                            # and cash, the other with 'no
+                                            # data'
+
 
 
     def validate_account(self, account):

@@ -172,6 +172,9 @@ def read_account(ws, row, port_values):
 		rows_read = rows_read + 1
 		# end of while loop
 
+	if row+rows_read >= ws.nrows:	# reaches end of file
+		return rows_read
+
 	account_code, account_name = extract_account_info(cell_value)
 	account = {}
 	accounts = retrieve_or_create(port_values, 'accounts')
