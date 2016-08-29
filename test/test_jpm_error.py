@@ -6,7 +6,7 @@ import unittest2
 import datetime
 from xlrd import open_workbook
 from jpm.utility import get_current_path
-from jpm.open_jpm import read_jpm, read_date
+from jpm.open_jpm import read_jpm, read_date, InconsistentSubtotal
 
 class TestJPM(unittest2.TestCase):
 
@@ -71,3 +71,14 @@ class TestJPM(unittest2.TestCase):
         # same as the above
         with self.assertRaisesRegexp(ValueError, '.*is out of range for.*'):
             n, d = read_date(ws, row)
+
+
+
+    def test_read_jpm_error(self):
+        filename = get_current_path() + '\\samples\\holding_error.xls'
+        wb = open_workbook(filename=filename)
+        ws = wb.sheet_by_name('Sheet1')
+        port_values = {}
+
+        with self.assertRaises(InconsistentSubtotal):
+            read_jpm(ws, port_values)

@@ -12,6 +12,14 @@ from jpm.utility import logger, get_datemode, retrieve_or_create
 
 
 
+class InconsistentSubtotal(Exception):
+	"""
+	Used by function validate_holdings_total().
+	"""
+	pass
+
+
+
 def read_jpm(ws, port_values):
 	"""
 	Read the worksheet with portfolio holdings. To retrieve holding, 
@@ -612,8 +620,7 @@ def validate_holdings_total(holdings, holdings_total):
             if abs(sub_total - holdings_total[field]) > 0.000001:
             	logger.error('validate_holdings_total(): sub total does not match for field {0}: {1} != {2}'.
             					format(field, sub_total, holdings_total[field]))
-            	raise ValueError('inconsisten sub total for field {0}'.
-            						format(field))
+            	raise InconsistentSubtotal
 
 
 
