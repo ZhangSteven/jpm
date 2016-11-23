@@ -9,7 +9,7 @@ from jpm.utility import get_current_path
 from jpm.open_jpm import read_jpm, read_date, extract_account_info, \
                             read_holding_fields, read_holding_position, \
                             read_holdings_total, validate_holdings_total, \
-                            read_holdings, read_cash_fields, \
+                            read_holdings, read_cash_fields, is_empty_account, \
                             read_cash_position, read_cash, read_account
 
 
@@ -346,11 +346,14 @@ class TestJPM(unittest2.TestCase):
         read_jpm(ws, port_values)
         self.assertEqual(port_values['date'], datetime.datetime(2016,7,6))
         accounts = port_values['accounts']
-        self.assertEqual(len(accounts), 12) # 6 accounts in total, each
-                                            # account is presented twice in
-                                            # the excel, one with holdings
-                                            # and cash, the other with 'no
-                                            # data'
+        self.assertEqual(len(accounts), 12) 
+        
+        empty_account = 0
+        for account in accounts:
+            if is_empty_account(account):
+                empty_account = empty_account + 1
+
+        self.assertEqual(empty_account, 6)
 
 
 

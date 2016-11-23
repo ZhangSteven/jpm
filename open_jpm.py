@@ -221,6 +221,18 @@ def read_account(ws, row, port_values):
 
 
 
+def is_empty_account(account):
+	"""
+	Tell whether an account is an empty account, i.e., those with 'No Data for
+	this Account' in the excel.
+	"""
+	if 'cash' in account or 'holdings' in account:
+		return False
+	else:
+		return True
+
+
+
 def read_holdings(ws, row, holdings):
 	"""
 	Read the holdings section. Each holdings section will consist of
