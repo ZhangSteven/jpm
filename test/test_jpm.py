@@ -355,6 +355,11 @@ class TestJPM(unittest2.TestCase):
 
         self.assertEqual(empty_account, 6)
 
+        self.validate_account(accounts[0])  # for account 48029
+
+        self.validate_bond_holdings(accounts[3]['holdings'])  # account 48195
+        self.assertEqual(len(accounts[5]['holdings']), 1)     # account 53413
+
 
 
     def validate_account(self, account):

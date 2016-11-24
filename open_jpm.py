@@ -7,8 +7,9 @@
 from xlrd import open_workbook
 from xlrd.xldate import xldate_as_datetime
 import xlrd
-import datetime
-from jpm.utility import logger, get_datemode, retrieve_or_create
+import datetime, csv
+from jpm.utility import logger, get_datemode, retrieve_or_create, \
+						get_current_path
 
 
 
@@ -16,6 +17,11 @@ class InconsistentSubtotal(Exception):
 	"""
 	Used by function validate_holdings_total().
 	"""
+	pass
+
+
+
+class InvalidAccountCode(Exception):
 	pass
 
 
@@ -86,7 +92,7 @@ def read_jpm(ws, port_values):
 		rows_read = read_account(ws, row, port_values)
 		row = row + rows_read
 
-
+	write_csv(port_values)
 	logger.debug('out of read_jpm()')
 
 
@@ -461,7 +467,7 @@ def read_holdings_total(ws, row):
 	"""
 	Read the sub total of all holdings in an account
 
-	The function returns the number of rows read, the the holdings_total
+	The function returns the number of rows read, then the holdings_total
 	holding object. This holding object is then used to verify holding
 	positions are read properly.
 	"""
@@ -695,3 +701,100 @@ def is_empty_cell(ws, row, column):
 		return True
 	else:
 		return False
+
+
+
+def get_portfolio_date_as_string(port_values):
+	d = port_values['date']
+	return convert_datetime_to_string(d)
+
+
+
+def convert_datetime_to_string(dt):
+	"""
+	convert a datetime object to string in the 'yyyy-mm-dd' format.
+	"""
+	return '{0}-{1}-{2}'.format(dt.year, dt.month, dt.day)
+
+
+
+def map_portfolio_id(account_code):
+	"""
+	Map the account code of JP Morgan to the portfolio id in Geneva.
+	"""
+
+	# China Life overseas accounts
+	if account_code == '48029':
+		return '11490'
+	elif account_code == '48089':
+		return '11491'
+	elif account_code == '48090':
+		return '11492'
+	elif account_code == '48195':
+		return '11493'
+	elif account_code == '53412':
+		return '11494'
+	elif account_code == '53413':
+		return '11495'
+
+	# China Life ListCo accounts
+	elif account_code == 'AFU34':
+		return '12306'
+	elif account_code == 'AFU35':
+		return '12307'
+	elif account_code == 'BBK32':
+		return '12308'
+	elif account_code == 'AFU37':
+		return '12309'
+
+	else:
+		logger.error('map_portfolio_id(): invalid account code {0}'.
+						format(account_code))
+		raise InvalidAccountCode()
+
+
+
+
+def write_csv(port_values):
+	"""
+	Write cash and holdings into csv files.
+	"""	
+	cash_file = get_current_path() + '\\cash.csv'
+	write_cash_csv(cash_file, port_values)
+
+	# holding_file = get_current_path() + '\\holding.csv'
+	# write_holding_csv(holding_file, port_values)
+
+
+
+def write_cash_csv(cash_file, port_values):
+	with open(cash_file, 'w', newline='') as csvfile:
+		file_writer = csv.writer(csvfile)
+
+		portfolio_date = get_portfolio_date_as_string(port_values)
+		fields = ['portfolio', 'date', 'currency', 'opening_balance', 
+                    'closing_balance']
+		file_writer.writerow(fields)
+		
+		accounts = port_values['accounts']
+		for account in accounts:
+			if is_empty_account(account):
+				continue
+
+			portfolio_id = map_portfolio_id(account['account_code'])
+
+			cash = account['cash']
+			for position in cash:
+				row = []
+
+				for fld in fields:
+					if fld == 'portfolio':
+						item = portfolio_id
+					elif fld == 'date':
+						item = portfolio_date
+					else:
+						item = position[fld]
+
+					row.append(item)
+
+				file_writer.writerow(row)
