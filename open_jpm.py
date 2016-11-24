@@ -935,6 +935,7 @@ if __name__ == '__main__':
 		read_jpm(ws, port_values)
 		write_csv(port_values)
 	except:
+		logger.exception('open_jpm:main()')
 		print('something is wrong, check log file.')
 	else:
 		print('OK')
