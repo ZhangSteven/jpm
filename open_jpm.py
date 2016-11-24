@@ -6,10 +6,9 @@
 
 from xlrd import open_workbook
 from xlrd.xldate import xldate_as_datetime
-import xlrd
 import datetime, csv
-from jpm.utility import logger, get_datemode, retrieve_or_create, \
-						get_current_path
+from jpm.utility import get_datemode, retrieve_or_create, \
+						get_current_path, logger
 
 
 
@@ -58,6 +57,7 @@ def read_jpm(ws, port_values):
 
 	"""
 	logger.debug('in read_jpm()')
+	
 
 	"""
 	Now trying to read cash and holdings in the worksheet. The structure of
@@ -92,7 +92,6 @@ def read_jpm(ws, port_values):
 		rows_read = read_account(ws, row, port_values)
 		row = row + rows_read
 
-	write_csv(port_values)
 	logger.debug('out of read_jpm()')
 
 
@@ -167,7 +166,14 @@ def extract_account_info(account_info):
 	account_code = temp_list[0]
 	account_name = str.strip(info_string[len(account_code):])
 
+	logger.debug('extract_account_info(): {0}, {1}'.format(account_code, account_name))
 	return account_code, account_name
+
+
+
+def account_begins(cell_value):
+	if isinstance(cell_value, str) and cell_value.startswith('Account:'):
+		return True
 
 
 
@@ -180,8 +186,8 @@ def read_account(ws, row, port_values):
 	while (row+rows_read < ws.nrows):
 
 		cell_value = ws.cell_value(row+rows_read, 0)
-		if isinstance(cell_value, str) and cell_value.startswith('Account:'):
-			break	# account starts
+		if account_begins(cell_value):
+			break
 
 		rows_read = rows_read + 1
 		# end of while loop
@@ -219,6 +225,8 @@ def read_account(ws, row, port_values):
 	elif isinstance(cell_value, str) and cell_value == 'No Data for this Account':
 		rows_read = rows_read + 1
 
+	elif account_begins(cell_value):	# the next account begins
+		pass
 	else:
 		logger.error('read_account(): unexpected sub section in row {0}'.
 						format(row+rows_read))
@@ -254,6 +262,7 @@ def read_holdings(ws, row, holdings):
 	holding total subsection(1)
 
 	"""
+	logger.debug('read_holdings(): at row {0}'.format(row))
 	rows_read = 0
 
 	rows_each_holding, coordinates, fields = read_holding_fields(ws, row+rows_read)
@@ -303,6 +312,7 @@ def read_holding_fields(ws, row):
 	spread sheet.
 
 	"""
+	logger.debug('read_holding_fields(): at row {0}'.format(row))
 	rows_read = 0
 	fields = []
 	coordinates = []
@@ -383,6 +393,7 @@ def read_holding_position(ws, row, coordinates, fields, holdings):
 	"""
 	Read a holding position and save it into the holdings object.
 	"""
+	logger.debug('read_holding_position(): at row {0}'.format(row))
 	position = {}
 
 	i = 0
@@ -399,9 +410,14 @@ def read_holding_position(ws, row, coordinates, fields, holdings):
 
 			if isinstance(cell_value, str):
 				if cell_value == '':
-					logger.error('read_holding_position(): field {0} is empty'.
-								format(fld))
-					raise ValueError('field {0} is empty'.format(fld))
+					# special case handling
+					if fld == 'isin':
+						position['isin'] = ''
+						position['geneva_investment_id'] = map_geneva_investment_id(position['security_id'])
+					else:
+						logger.error('read_holding_position(): field {0} is empty'.
+										format(fld))
+						raise ValueError('field {0} is empty'.format(fld))
 				else:
 					position[fld] = cell_value
 			else:
@@ -471,6 +487,7 @@ def read_holdings_total(ws, row):
 	holding object. This holding object is then used to verify holding
 	positions are read properly.
 	"""
+	logger.debug('read_holdings_total(): at row {0}'.format(row))
 	holdings_total = {}
 	fields = ['awaiting_receipt', 'settled_units', 'total_units',
 	'awaiting_delivery', 'current_face_settled', 'current_face_total']
@@ -500,6 +517,7 @@ def read_cash(ws, row, cash):
 	"""
 	Read the cash positions for each account
 	"""
+	logger.debug('read_cash(): at row {0}'.format(row))
 	rows_read = 0
 
 	fields = read_cash_fields(ws, row)
@@ -510,15 +528,22 @@ def read_cash(ws, row, cash):
 
 		while (is_blank_line(ws, row+rows_read)):
 			rows_read = rows_read + 1
-
-		try:
-			n = read_cash_position(ws, row+rows_read, fields, cash)
-			rows_read = rows_read + n
-		except (ValueError,TypeError):	# this line does not look like a valid
-										# cash position, stop reading
-			logger.info('read_cash(): row {0} is not a cash position'.
-							format(row+rows_read))
+		
+		cell_value = ws.cell_value(row+rows_read, 0)
+		if account_begins(cell_value):
 			break
+
+		# try:
+		# 	n = read_cash_position(ws, row+rows_read, fields, cash)
+		# 	rows_read = rows_read + n
+		# except (ValueError,TypeError):	# this line does not look like a valid
+		# 								# cash position, stop reading
+		# 	logger.info('read_cash(): row {0} is not a cash position'.
+		# 					format(row+rows_read))
+		# 	break
+
+		n = read_cash_position(ws, row+rows_read, fields, cash)
+		rows_read = rows_read + n
 
 		# end of while loop
 
@@ -530,6 +555,7 @@ def read_cash_fields(ws, row):
 	"""
 	Read the data fields in a cash position
 	"""
+	logger.debug('read_cash_fields(): at row {0}'.format(row))
 	fields = []
 
 	for column in range(10):	# read up to column J
@@ -577,6 +603,7 @@ def read_cash_position(ws, row, fields, cash):
 	"""
 	Read a cash position
 	"""
+	logger.debug('read_cash_position(): at row {0}'.format(row))
 	position = {}
 	column = -1
 	for field in fields:
@@ -754,6 +781,52 @@ def map_portfolio_id(account_code):
 
 
 
+investment_lookup = {}
+def map_geneva_investment_id(security_id):
+	"""
+	map a security's id (JPM) to its investment id in Geneva system.
+
+	This is only used when a security is not a public security, so no
+	isin number is present, therefore we need to lookup its investment id.
+	"""
+	global investment_lookup
+	if len(investment_lookup) == 0:
+		initialize_investment_lookup()
+
+	try:
+		id = investment_lookup[security_id]
+	except KeyError:
+		logger.error('map_geneva_investment_id(): security id {0} not found'.
+						format(security_id))
+		raise
+
+	return id
+
+
+
+def initialize_investment_lookup(lookup_file='investmentLookup.xls'):
+	filename = get_current_path() + '\\' + lookup_file
+	logger.debug('initialize investment id on file {0}'.format(lookup_file))
+
+	wb = open_workbook(filename=filename)
+	ws = wb.sheet_by_name('Sheet1')
+	row = 1
+	global investment_lookup
+	while (row < ws.nrows):
+		security_id = ws.cell_value(row, 0)
+		if security_id == '':
+			break
+		if isinstance(security_id, float):
+			security_id = int(security_id)
+
+		investment_id = ws.cell_value(row, 2)
+		investment_lookup[str(security_id).strip()] = str(investment_id).strip()
+		row = row + 1
+
+	logger.debug('initialize_investment_lookup(): {0} entries loaded'.
+					format(row-1))
+
+
 
 def write_csv(port_values):
 	"""
@@ -762,13 +835,14 @@ def write_csv(port_values):
 	cash_file = get_current_path() + '\\cash.csv'
 	write_cash_csv(cash_file, port_values)
 
-	# holding_file = get_current_path() + '\\holding.csv'
-	# write_holding_csv(holding_file, port_values)
+	holding_file = get_current_path() + '\\holding.csv'
+	write_holding_csv(holding_file, port_values)
 
 
 
 def write_cash_csv(cash_file, port_values):
 	with open(cash_file, 'w', newline='') as csvfile:
+		logger.debug('write_cash_csv(): {0}'.format(cash_file))
 		file_writer = csv.writer(csvfile)
 
 		portfolio_date = get_portfolio_date_as_string(port_values)
@@ -778,7 +852,7 @@ def write_cash_csv(cash_file, port_values):
 		
 		accounts = port_values['accounts']
 		for account in accounts:
-			if is_empty_account(account):
+			if is_empty_account(account) or not 'cash' in account:
 				continue
 
 			portfolio_id = map_portfolio_id(account['account_code'])
@@ -798,3 +872,69 @@ def write_cash_csv(cash_file, port_values):
 					row.append(item)
 
 				file_writer.writerow(row)
+
+
+
+def	write_holding_csv(holding_file, port_values):
+	with open(holding_file, 'w', newline='') as csvfile:
+		logger.debug('write_holding_csv(): {0}'.format(holding_file))
+		file_writer = csv.writer(csvfile)
+
+		portfolio_date = get_portfolio_date_as_string(port_values)
+		fields = ['portfolio', 'date', 'geneva_investment_id', 'isin', 
+					'security_name', 'country', 'awaiting_receipt', 
+					'awaiting_delivery', 'collateral_units', 'borrowed_units', 
+					'settled_units', 'total_units', 'coupon_rate', 'maturity_date']
+
+		file_writer.writerow(fields)
+
+		accounts = port_values['accounts']
+		for account in accounts:
+			if is_empty_account(account) or not 'holdings' in account:
+				continue
+
+			portfolio_id = map_portfolio_id(account['account_code'])				
+			holdings = account['holdings']
+
+			for position in holdings:
+				row = []
+
+				for fld in fields:
+					if fld == 'portfolio':
+						item = portfolio_id
+					elif fld == 'date':
+						item = portfolio_date
+					else:
+						try:
+							item = position[fld]
+							if fld == 'maturity_date':
+								item = convert_datetime_to_string(item)
+						except KeyError:
+							item = ''
+
+					row.append(item)
+
+				file_writer.writerow(row)
+
+
+
+
+if __name__ == '__main__':
+	import sys
+	if len(sys.argv) < 2:
+		logger.debug('use python open_jpm.py <input_file>')
+		sys.exit(1)
+
+	filename = get_current_path() + '\\' + sys.argv[1]
+	logger.info('read file: {0}'.format(filename))
+
+	port_values = {}
+	try:
+		wb = open_workbook(filename=filename)
+		ws = wb.sheet_by_name('Sheet1')
+		read_jpm(ws, port_values)
+		write_csv(port_values)
+	except:
+		print('something is wrong, check log file.')
+	else:
+		print('OK')

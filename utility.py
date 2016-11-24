@@ -17,6 +17,7 @@ def get_current_path():
 
 	http://stackoverflow.com/questions/3430372/how-to-get-full-path-of-current-files-directory-in-python
 	"""
+	# return 'C:\\Users\\steven.zhang\\AppData\\Local\\Programs\\Git\\git\\jpm'
 	return os.path.dirname(os.path.abspath(__file__))
 
 
