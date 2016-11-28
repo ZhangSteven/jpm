@@ -922,7 +922,7 @@ def	write_holding_csv(holding_file, port_values):
 if __name__ == '__main__':
 	import sys
 	if len(sys.argv) < 2:
-		logger.debug('use python open_jpm.py <input_file>')
+		print('use python open_jpm.py <input_file>')
 		sys.exit(1)
 
 	filename = get_current_path() + '\\' + sys.argv[1]
@@ -936,6 +936,6 @@ if __name__ == '__main__':
 		write_csv(port_values)
 	except:
 		logger.exception('open_jpm:main()')
-		print('something is wrong, check log file.')
+		print('something goes wrong, check log file.')
 	else:
 		print('OK')
