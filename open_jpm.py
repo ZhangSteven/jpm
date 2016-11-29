@@ -12,6 +12,9 @@ from jpm.utility import get_datemode, retrieve_or_create, \
 
 
 
+class InvestmentIdNotFound(Exception):
+	pass
+
 class InconsistentSubtotal(Exception):
 	"""
 	Used by function validate_holdings_total().
@@ -798,7 +801,7 @@ def map_geneva_investment_id(security_id):
 	except KeyError:
 		logger.error('map_geneva_investment_id(): security id {0} not found'.
 						format(security_id))
-		raise
+		raise InvestmentIdNotFound()
 
 	return id
 
