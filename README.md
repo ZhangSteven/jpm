@@ -20,6 +20,22 @@ To run unit test, run
 
 
 ++++++++++
+Todo
+++++++++++
+
+1. Since trade_converter established a lookup from isin to ticker, consider to make the lookup an independent module, then we can do:
+
+	a. tell whether the holding is an equity based on: has an isin, but no coupon date and maturity date.
+
+	b. lookup geneva investment id from there.
+
+
+2. Fix the raise no exception in get_datemode()
+
+3. Like trade_converter, use another directory as the working directory, and change to use argparse instead of just command line.
+
+
+++++++++++
 ver 0.1
 ++++++++++
 
