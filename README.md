@@ -30,9 +30,21 @@ Todo
 	b. lookup geneva investment id from there.
 
 
-2. Fix the raise no exception in get_datemode()
 
-3. Like trade_converter, use another directory as the working directory, and change to use argparse instead of just command line.
+
+++++++++++
+ver 0.11
+++++++++++
+1. Add two entries in the config file:
+
+	> base directory for input jpm position file and output the csv files. So those files do not mix with the code.
+
+	> base directory for the log file. So during production deployment, the log file can be put in a different directory for easy checking.
+
+2. logging function is handled by another package config_logging.
+
+3. Bug fix: in utility.py, the get_datemode() function raises no exception when datemode value is invalid.
+
 
 
 ++++++++++

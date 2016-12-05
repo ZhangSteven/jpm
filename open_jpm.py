@@ -6,9 +6,9 @@
 
 from xlrd import open_workbook
 from xlrd.xldate import xldate_as_datetime
-import datetime, csv
+import datetime, csv, os
 from jpm.utility import get_datemode, retrieve_or_create, \
-						get_current_path, logger
+						get_current_path, logger, get_input_directory
 
 
 
@@ -835,10 +835,10 @@ def write_csv(port_values):
 	"""
 	Write cash and holdings into csv files.
 	"""	
-	cash_file = get_current_path() + '\\cash.csv'
+	cash_file = get_input_directory() + '\\cash.csv'
 	write_cash_csv(cash_file, port_values)
 
-	holding_file = get_current_path() + '\\holding.csv'
+	holding_file = get_input_directory() + '\\holding.csv'
 	write_holding_csv(holding_file, port_values)
 
 
@@ -928,8 +928,10 @@ if __name__ == '__main__':
 		print('use python open_jpm.py <input_file>')
 		sys.exit(1)
 
-	filename = get_current_path() + '\\' + sys.argv[1]
-	logger.info('read file: {0}'.format(filename))
+	filename = get_input_directory() + '\\' + sys.argv[1]
+	if not os.path.exists(filename):
+		print('{0} does not exist'.format(filename))
+		sys.exit(1)
 
 	port_values = {}
 	try:
