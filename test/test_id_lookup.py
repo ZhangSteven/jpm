@@ -5,7 +5,8 @@ Test the open_jpm.py
 import unittest2
 from jpm.utility import get_current_path
 from jpm.id_lookup import get_investment_Ids, InvalidPortfolioId, \
-                            InvestmentIdNotFound, initialize_investment_lookup
+                            InvestmentIdNotFound, initialize_investment_lookup, \
+                            lookup_investment_currency, InvestmentCurrencyNotFound
 
 
 
@@ -81,6 +82,17 @@ class TestLookup(unittest2.TestCase):
 
 
 
+    def test_lookup_investment_currency(self):
+        lookup_file = get_current_path() + '\\samples\\sample_lookup.xls'
+        initialize_investment_lookup(lookup_file)
+
+        security_id_type = 'JPM'
+        security_id = 'B1L3XL6'
+        self.assertEqual(lookup_investment_currency(security_id_type, security_id),
+                            'HKD')
+
+
+
     def test_error1(self):
         lookup_file = get_current_path() + '\\samples\\sample_lookup.xls'
         initialize_investment_lookup(lookup_file)
@@ -96,3 +108,12 @@ class TestLookup(unittest2.TestCase):
 
         with self.assertRaises(InvestmentIdNotFound):
             get_investment_Ids('11490', 'CMU', '12345678')
+
+
+
+    def test_error3(self):
+        lookup_file = get_current_path() + '\\samples\\sample_lookup.xls'
+        initialize_investment_lookup(lookup_file)
+
+        with self.assertRaises(InvestmentCurrencyNotFound):
+            lookup_investment_currency('JPM', '8888888')

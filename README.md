@@ -32,6 +32,13 @@ Todo
 
 
 ++++++++++
+ver 0.13
+++++++++++
+1. Add one more column "currency" to the output csv file, as the Geneva reconciliation requires local currency for matching.
+
+
+
+++++++++++
 ver 0.12
 ++++++++++
 1. Add one more column "geneva_investment_id" to the output csv file, just for HTM portfolios.

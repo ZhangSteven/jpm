@@ -9,17 +9,15 @@ from xlrd.xldate import xldate_as_datetime
 import datetime, csv, os
 from jpm.utility import get_datemode, retrieve_or_create, \
 						get_current_path, logger, get_input_directory
-from jpm.id_lookup import get_investment_Ids
+from jpm.id_lookup import get_investment_Ids, lookup_investment_currency
 
 
 
-class InconsistentSubtotal(Exception):
-	"""
-	Used by function validate_holdings_total().
-	"""
+class NoCurrencyCodeInName(Exception):
 	pass
 
-
+class InconsistentSubtotal(Exception):
+	pass
 
 class InvalidAccountCode(Exception):
 	pass
@@ -783,50 +781,18 @@ def map_portfolio_id(account_code):
 
 
 
-# investment_lookup = {}
-# def map_geneva_investment_id(security_id):
-# 	"""
-# 	map a security's id (JPM) to its investment id in Geneva system.
-
-# 	This is only used when a security is not a public security, so no
-# 	isin number is present, therefore we need to lookup its investment id.
-# 	"""
-# 	global investment_lookup
-# 	if len(investment_lookup) == 0:
-# 		initialize_investment_lookup()
-
-# 	try:
-# 		id = investment_lookup[security_id]
-# 	except KeyError:
-# 		logger.error('map_geneva_investment_id(): security id {0} not found'.
-# 						format(security_id))
-# 		raise InvestmentIdNotFound()
-
-# 	return id
-
-
-
-# def initialize_investment_lookup(lookup_file='investmentLookup.xls'):
-# 	filename = get_current_path() + '\\' + lookup_file
-# 	logger.debug('initialize investment id on file {0}'.format(lookup_file))
-
-# 	wb = open_workbook(filename=filename)
-# 	ws = wb.sheet_by_name('Sheet1')
-# 	row = 1
-# 	global investment_lookup
-# 	while (row < ws.nrows):
-# 		security_id = ws.cell_value(row, 0)
-# 		if security_id == '':
-# 			break
-# 		if isinstance(security_id, float):
-# 			security_id = int(security_id)
-
-# 		investment_id = ws.cell_value(row, 2)
-# 		investment_lookup[str(security_id).strip()] = str(investment_id).strip()
-# 		row = row + 1
-
-# 	logger.debug('initialize_investment_lookup(): {0} entries loaded'.
-# 					format(row-1))
+def get_currency_from_name(security_name):
+	"""
+	Extract the currency from the security name
+	"""
+	tokens = security_name.split()
+	currency_code = ['HKD', 'USD', 'CNY', 'SGD', 'JPY', 'EUR']
+	if tokens[-2] in currency_code:
+		return tokens[-2]
+	elif tokens[-1] in currency_code:
+		return tokens[-1]
+	else:
+		raise NoCurrencyCodeInName()
 
 
 
@@ -887,8 +853,8 @@ def	write_holding_csv(holding_file, port_values):
 					'awaiting_delivery', 'collateral_units', 'borrowed_units', 
 					'settled_units', 'total_units', 'coupon_rate', 'maturity_date']
 
-		file_writer.writerow(['portfolio', 'date', 'geneva_investment_id', 'isin', 'bloomberg_figi'] \
-								+ fields)
+		file_writer.writerow(['portfolio', 'date', 'geneva_investment_id', 'isin',
+								'bloomberg_figi', 'currency'] + fields)
 
 		accounts = port_values['accounts']
 		for account in accounts:
@@ -910,6 +876,11 @@ def	write_holding_csv(holding_file, port_values):
 				investment_ids = get_investment_Ids(portfolio_id, security_id_type, security_id)
 				for id in investment_ids:
 					row.append(id)
+
+				try:
+					row.append(get_currency_from_name(position['security_name']))
+				except NoCurrencyCodeInName:
+					row.append(lookup_investment_currency('JPM', position['security_id']))
 
 				for fld in fields:
 					try:

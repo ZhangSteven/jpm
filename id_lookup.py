@@ -5,6 +5,9 @@ from jpm.utility import logger, get_current_path
 
 
 
+class InvestmentCurrencyNotFound(Exception):
+	pass
+
 class InvalidPortfolioId(Exception):
 	pass
 
@@ -49,6 +52,7 @@ def get_investment_id_from_isin(accounting_treatment, isin):
 
 
 investment_lookup = {}
+currency_lookup = {}
 def initialize_investment_lookup(lookup_file=get_current_path()+'\\investmentLookup.xls'):
 	"""
 	Initialize the lookup table from a file, for those securities that
@@ -82,6 +86,24 @@ def initialize_investment_lookup(lookup_file=get_current_path()+'\\investmentLoo
 		row = row + 1
 	# end of while loop 
 
+	ws = wb.sheet_by_name('Sheet2')
+	row = 1
+	global currency_lookup
+	while (row < ws.nrows):
+		security_id_type = ws.cell_value(row, 0)
+		if security_id_type.strip() == '':
+			break
+
+		security_id = ws.cell_value(row, 1)
+		currency = ws.cell_value(row, 3)
+		if isinstance(security_id, float):
+			security_id = str(int(security_id))
+
+		currency_lookup[(security_id_type.strip(), security_id.strip())] = currency.strip()
+
+		row = row + 1
+	# end of while loop 
+
 
 
 def lookup_investment_id(security_id_type, security_id):
@@ -95,6 +117,20 @@ def lookup_investment_id(security_id_type, security_id):
 		logger.error('lookup_investment_id(): No record found for security_id_type={0}, security_id={1}'.
 						format(security_id_type, security_id))
 		raise InvestmentIdNotFound()
+
+
+
+def lookup_investment_currency(security_id_type, security_id):
+	global currency_lookup
+	if len(currency_lookup) == 0:
+		initialize_investment_lookup()
+
+	try:
+		return currency_lookup[(security_id_type, security_id)]
+	except KeyError:
+		logger.error('lookup_investment_currency(): No record found for security_id_type={0}, security_id={1}'.
+						format(security_id_type, security_id))
+		raise InvestmentCurrencyNotFound()
 
 
 
