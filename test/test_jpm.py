@@ -10,8 +10,7 @@ from jpm.open_jpm import read_jpm, read_date, extract_account_info, \
                             read_holding_fields, read_holding_position, \
                             read_holdings_total, validate_holdings_total, \
                             read_holdings, read_cash_fields, is_empty_account, \
-                            read_cash_position, read_cash, read_account, \
-                            initialize_investment_lookup
+                            read_cash_position, read_cash, read_account
 
 
 
@@ -70,14 +69,14 @@ class TestJPM(unittest2.TestCase):
 
 
 
-    def test_investment_lookup(self):
-        lookup_file = 'samples\\investmentLookup_sample.xls'
-        from jpm.open_jpm import investment_lookup
-        initialize_investment_lookup(lookup_file)
-        self.assertEqual(len(investment_lookup), 3)
-        self.assertEqual(investment_lookup['4C0198S'], 'investment vista PE')
-        self.assertEqual(investment_lookup['12345'], 'sample inv 2')
-        self.assertEqual(investment_lookup['S789'], 'sample inv 3')
+    # def test_investment_lookup(self):
+    #     lookup_file = 'samples\\investmentLookup_sample.xls'
+    #     from jpm.open_jpm import investment_lookup
+    #     initialize_investment_lookup(lookup_file)
+    #     self.assertEqual(len(investment_lookup), 3)
+    #     self.assertEqual(investment_lookup['4C0198S'], 'investment vista PE')
+    #     self.assertEqual(investment_lookup['12345'], 'sample inv 2')
+    #     self.assertEqual(investment_lookup['S789'], 'sample inv 3')
 
 
 

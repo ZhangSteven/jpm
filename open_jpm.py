@@ -9,11 +9,9 @@ from xlrd.xldate import xldate_as_datetime
 import datetime, csv, os
 from jpm.utility import get_datemode, retrieve_or_create, \
 						get_current_path, logger, get_input_directory
+from jpm.id_lookup import get_investment_Ids
 
 
-
-class InvestmentIdNotFound(Exception):
-	pass
 
 class InconsistentSubtotal(Exception):
 	"""
@@ -412,21 +410,22 @@ def read_holding_position(ws, row, coordinates, fields, holdings):
 					'country']:	# mandatory fields whose value is string
 
 			if isinstance(cell_value, str):
-				if cell_value == '':
-					# special case handling
-					if fld == 'isin':
-						position['isin'] = ''
-						position['geneva_investment_id'] = map_geneva_investment_id(position['security_id'])
-					else:
-						logger.error('read_holding_position(): field {0} is empty'.
-										format(fld))
-						raise ValueError('field {0} is empty'.format(fld))
-				else:
-					position[fld] = cell_value
+				# if cell_value == '':
+				# 	# special case handling
+				# 	if fld == 'isin':
+				# 		position['isin'] = ''
+				# 		position['geneva_investment_id'] = map_geneva_investment_id(position['security_id'])
+				# 	else:
+				# 		logger.error('read_holding_position(): field {0} is empty'.
+				# 						format(fld))
+				# 		raise ValueError('field {0} is empty'.format(fld))
+				# else:
+				# 	position[fld] = cell_value
+				position[fld] = cell_value.strip()
 			else:
 				logger.error('read_holding_position(): invalid type for field {0}, value={1}'.
 								format(fld, cell_value))
-				raise TypeError('invalid data type for field {0}'.format(fld))
+				raise TypeError
 		
 		elif fld in ['awaiting_receipt', 'settled_units', 'total_units',
 						'awaiting_delivery', 'collateral_units', 
@@ -784,50 +783,50 @@ def map_portfolio_id(account_code):
 
 
 
-investment_lookup = {}
-def map_geneva_investment_id(security_id):
-	"""
-	map a security's id (JPM) to its investment id in Geneva system.
+# investment_lookup = {}
+# def map_geneva_investment_id(security_id):
+# 	"""
+# 	map a security's id (JPM) to its investment id in Geneva system.
 
-	This is only used when a security is not a public security, so no
-	isin number is present, therefore we need to lookup its investment id.
-	"""
-	global investment_lookup
-	if len(investment_lookup) == 0:
-		initialize_investment_lookup()
+# 	This is only used when a security is not a public security, so no
+# 	isin number is present, therefore we need to lookup its investment id.
+# 	"""
+# 	global investment_lookup
+# 	if len(investment_lookup) == 0:
+# 		initialize_investment_lookup()
 
-	try:
-		id = investment_lookup[security_id]
-	except KeyError:
-		logger.error('map_geneva_investment_id(): security id {0} not found'.
-						format(security_id))
-		raise InvestmentIdNotFound()
+# 	try:
+# 		id = investment_lookup[security_id]
+# 	except KeyError:
+# 		logger.error('map_geneva_investment_id(): security id {0} not found'.
+# 						format(security_id))
+# 		raise InvestmentIdNotFound()
 
-	return id
+# 	return id
 
 
 
-def initialize_investment_lookup(lookup_file='investmentLookup.xls'):
-	filename = get_current_path() + '\\' + lookup_file
-	logger.debug('initialize investment id on file {0}'.format(lookup_file))
+# def initialize_investment_lookup(lookup_file='investmentLookup.xls'):
+# 	filename = get_current_path() + '\\' + lookup_file
+# 	logger.debug('initialize investment id on file {0}'.format(lookup_file))
 
-	wb = open_workbook(filename=filename)
-	ws = wb.sheet_by_name('Sheet1')
-	row = 1
-	global investment_lookup
-	while (row < ws.nrows):
-		security_id = ws.cell_value(row, 0)
-		if security_id == '':
-			break
-		if isinstance(security_id, float):
-			security_id = int(security_id)
+# 	wb = open_workbook(filename=filename)
+# 	ws = wb.sheet_by_name('Sheet1')
+# 	row = 1
+# 	global investment_lookup
+# 	while (row < ws.nrows):
+# 		security_id = ws.cell_value(row, 0)
+# 		if security_id == '':
+# 			break
+# 		if isinstance(security_id, float):
+# 			security_id = int(security_id)
 
-		investment_id = ws.cell_value(row, 2)
-		investment_lookup[str(security_id).strip()] = str(investment_id).strip()
-		row = row + 1
+# 		investment_id = ws.cell_value(row, 2)
+# 		investment_lookup[str(security_id).strip()] = str(investment_id).strip()
+# 		row = row + 1
 
-	logger.debug('initialize_investment_lookup(): {0} entries loaded'.
-					format(row-1))
+# 	logger.debug('initialize_investment_lookup(): {0} entries loaded'.
+# 					format(row-1))
 
 
 
@@ -884,12 +883,12 @@ def	write_holding_csv(holding_file, port_values):
 		file_writer = csv.writer(csvfile)
 
 		portfolio_date = get_portfolio_date_as_string(port_values)
-		fields = ['portfolio', 'date', 'geneva_investment_id', 'isin', 
-					'security_name', 'country', 'awaiting_receipt', 
+		fields = ['security_name', 'country', 'awaiting_receipt', 
 					'awaiting_delivery', 'collateral_units', 'borrowed_units', 
 					'settled_units', 'total_units', 'coupon_rate', 'maturity_date']
 
-		file_writer.writerow(fields)
+		file_writer.writerow(['portfolio', 'date', 'geneva_investment_id', 'isin', 'bloomberg_figi'] \
+								+ fields)
 
 		accounts = port_values['accounts']
 		for account in accounts:
@@ -900,20 +899,25 @@ def	write_holding_csv(holding_file, port_values):
 			holdings = account['holdings']
 
 			for position in holdings:
-				row = []
+				row = [portfolio_id, portfolio_date]
+				if position['isin'] == '':
+					security_id_type = 'JPM'
+					security_id = position['security_id']
+				else:
+					security_id_type = 'ISIN'
+					security_id = position['isin']
+
+				investment_ids = get_investment_Ids(portfolio_id, security_id_type, security_id)
+				for id in investment_ids:
+					row.append(id)
 
 				for fld in fields:
-					if fld == 'portfolio':
-						item = portfolio_id
-					elif fld == 'date':
-						item = portfolio_date
-					else:
-						try:
-							item = position[fld]
-							if fld == 'maturity_date':
-								item = convert_datetime_to_string(item)
-						except KeyError:
-							item = ''
+					try:
+						item = position[fld]
+						if fld == 'maturity_date':
+							item = convert_datetime_to_string(item)
+					except KeyError:
+						item = ''
 
 					row.append(item)
 

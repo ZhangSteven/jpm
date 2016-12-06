@@ -6,8 +6,8 @@ import unittest2
 import datetime
 from xlrd import open_workbook
 from jpm.utility import get_current_path
-from jpm.open_jpm import read_jpm, read_date, InconsistentSubtotal, \
-							InvestmentIdNotFound
+from jpm.open_jpm import read_jpm, read_date, InconsistentSubtotal, write_csv
+from jpm.id_lookup import InvestmentIdNotFound
 
 
 
@@ -85,8 +85,8 @@ class TestJPM(unittest2.TestCase):
 
         with self.assertRaises(InconsistentSubtotal):
             read_jpm(ws, port_values)
-
-
+    
+    
 
     def test_read_jpm_error2(self):
         filename = get_current_path() + '\\samples\\holding_error2.xls'
@@ -95,5 +95,5 @@ class TestJPM(unittest2.TestCase):
         port_values = {}
 
         with self.assertRaises(InvestmentIdNotFound):
-	        read_jpm(ws, port_values)
-
+            read_jpm(ws, port_values)
+            write_csv(port_values)

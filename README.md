@@ -31,6 +31,14 @@ Todo
 
 
 
+++++++++++
+ver 0.12
+++++++++++
+1. Add one more column "geneva_investment_id" to the output csv file, just for HTM portfolios.
+
+2. Change the id lookup function to make it similar to project bochk's, and move them into a separate module.
+
+
 
 ++++++++++
 ver 0.11
