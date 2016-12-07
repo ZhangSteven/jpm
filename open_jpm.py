@@ -9,7 +9,8 @@ from xlrd.xldate import xldate_as_datetime
 import datetime, csv, os
 from jpm.utility import get_datemode, retrieve_or_create, \
 						get_current_path, logger, get_input_directory
-from jpm.id_lookup import get_investment_Ids, lookup_investment_currency
+from investment_lookup.id_lookup import get_investment_Ids, \
+										lookup_investment_currency
 
 
 

@@ -25,16 +25,23 @@ Todo
 
 1. Since trade_converter established a lookup from isin to ticker, consider to make the lookup an independent module, then we can do:
 
-	a. tell whether the holding is an equity based on: has an isin, but no coupon date and maturity date.
+	a. tell whether the holding is an equity based on: has an isin, but no coupon rate and maturity date.
 
 	b. lookup geneva investment id from there.
 
 
 
 ++++++++++
+ver 0.14
+++++++++++
+1. Move the id_lookup.py to another project, so that it becomes a centralized place for lookup from multiple projects, like jpm, bochk, etc. Easier to maintain.
+
+
+
+++++++++++
 ver 0.13
 ++++++++++
-1. Add one more column "currency" to the output csv file, as the Geneva reconciliation requires local currency for matching.
+1. Add one more column "currency" to the output csv file, so that we can use both isin code and local currency to match, to minimize same isin code mapping to multiple instruments. 
 
 
 

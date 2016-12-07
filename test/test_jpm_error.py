@@ -8,7 +8,7 @@ from xlrd import open_workbook
 from jpm.utility import get_current_path
 from jpm.open_jpm import read_jpm, read_date, InconsistentSubtotal, write_csv, \
                             get_currency_from_name, NoCurrencyCodeInName
-from jpm.id_lookup import InvestmentIdNotFound
+from investment_lookup.id_lookup import InvestmentIdNotFound
 
 
 
