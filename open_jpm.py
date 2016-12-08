@@ -797,27 +797,39 @@ def get_currency_from_name(security_name):
 
 
 
+def create_csv_file_name(date_string, file_suffix):
+	"""
+	Create the output csv file name based on the date string, as well as
+	the file suffix: cash, afs_positions, or htm_positions
+	"""
+	csv_file = get_input_directory() + '\\JPM_' + date_string + '_' \
+				+ file_suffix + '.csv'
+	return csv_file
+
+
+
 def write_csv(port_values):
 	"""
 	Write cash and holdings into csv files.
 	"""	
-	cash_file = get_input_directory() + '\\cash.csv'
-	write_cash_csv(cash_file, port_values)
+	# cash_file = get_input_directory() + '\\cash.csv'
+	write_cash_csv(port_values)
 
-	holding_file = get_input_directory() + '\\holding.csv'
-	write_holding_csv(holding_file, port_values)
+	# holding_file = get_input_directory() + '\\holding.csv'
+	write_holding_csv(port_values)
 
 
 
-def write_cash_csv(cash_file, port_values):
+def write_cash_csv(port_values):
+	portfolio_date = get_portfolio_date_as_string(port_values)
+	cash_file = create_csv_file_name(portfolio_date, 'cash')
+
 	with open(cash_file, 'w', newline='') as csvfile:
 		logger.debug('write_cash_csv(): {0}'.format(cash_file))
-		file_writer = csv.writer(csvfile)
+		file_writer = csv.writer(csvfile, delimiter='|')
 
-		portfolio_date = get_portfolio_date_as_string(port_values)
-		fields = ['portfolio', 'date', 'currency', 'opening_balance', 
-                    'closing_balance']
-		file_writer.writerow(fields)
+		fields = ['currency', 'opening_balance', 'closing_balance']
+		file_writer.writerow(['portfolio', 'date', 'custodian'] + fields)
 		
 		accounts = port_values['accounts']
 		for account in accounts:
@@ -825,31 +837,25 @@ def write_cash_csv(cash_file, port_values):
 				continue
 
 			portfolio_id = map_portfolio_id(account['account_code'])
-
 			cash = account['cash']
 			for position in cash:
-				row = []
+				row = [portfolio_id, portfolio_date, 'JPM']
 
 				for fld in fields:
-					if fld == 'portfolio':
-						item = portfolio_id
-					elif fld == 'date':
-						item = portfolio_date
-					else:
-						item = position[fld]
-
-					row.append(item)
+					row.append(position[fld])
 
 				file_writer.writerow(row)
 
 
 
-def	write_holding_csv(holding_file, port_values):
+def	write_holding_csv(port_values):
+	portfolio_date = get_portfolio_date_as_string(port_values)
+	holding_file = create_csv_file_name(portfolio_date, 'position')
+
 	with open(holding_file, 'w', newline='') as csvfile:
 		logger.debug('write_holding_csv(): {0}'.format(holding_file))
-		file_writer = csv.writer(csvfile)
+		file_writer = csv.writer(csvfile, delimiter='|')
 
-		portfolio_date = get_portfolio_date_as_string(port_values)
 		fields = ['security_name', 'country', 'awaiting_receipt', 
 					'awaiting_delivery', 'collateral_units', 'borrowed_units', 
 					'settled_units', 'total_units', 'coupon_rate', 'maturity_date']

@@ -32,6 +32,17 @@ Todo
 
 
 ++++++++++
+ver 0.15
+++++++++++
+Tested with JPM reon.
+
+1. Change the output csv to use '|' as delimiter, to avoid potential problem due to data field such as "security name" containing commas.
+
+2. Add date to the output csv file name.
+
+
+
+++++++++++
 ver 0.14
 ++++++++++
 1. Move the id_lookup.py to another project, so that it becomes a centralized place for lookup from multiple projects, like jpm, bochk, etc. Easier to maintain.
