@@ -767,7 +767,7 @@ def map_portfolio_id(account_code):
 
 	# China Life ListCo accounts
 	elif account_code == 'AFU34':
-		return '12306'
+		return '12404'
 	elif account_code == 'AFU35':
 		return '12307'
 	elif account_code == 'BBK32':

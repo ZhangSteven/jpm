@@ -32,6 +32,13 @@ Todo
 
 
 ++++++++++
+ver 0.16
+++++++++++
+1. Updated the portfolio code from '12306' to '12404' in function map_portfolio_id()
+
+
+
+++++++++++
 ver 0.15
 ++++++++++
 Tested with JPM reon.
