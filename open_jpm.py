@@ -797,13 +797,28 @@ def get_currency_from_name(security_name):
 
 
 
+def get_prefix_from_dir(input_dir):
+	"""
+	Work out a prefix for the filename depending on the input directory.
+	"""
+	token = input_dir.split('\\')[-1]
+	if token.lower() == 'listco equity':
+		return 'listco_equity'
+	elif token.lower() == 'clo equity':
+		return 'clo_equity'
+	else:
+		return 'jpm'
+
+
+
 def create_csv_file_name(date_string, file_suffix):
 	"""
 	Create the output csv file name based on the date string, as well as
 	the file suffix: cash, afs_positions, or htm_positions
 	"""
-	csv_file = get_input_directory() + '\\JPM_' + date_string + '_' \
-				+ file_suffix + '.csv'
+	input_dir = get_input_directory()
+	csv_file = input_dir + '\\' + get_prefix_from_dir(input_dir) + '_' + \
+				date_string + '_' + file_suffix + '.csv'
 	return csv_file
 
 

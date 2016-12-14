@@ -32,6 +32,13 @@ Todo
 
 
 ++++++++++
+ver 0.17
+++++++++++
+1. The csv output filename now depends on the input directory, if the input directory ends with "ListCo Equity", then output listco_equity_*.csv, if the input directory ends with "CLO Equity", then output clo_equity_*.csv, else output jpm_*.csv.
+
+
+
+++++++++++
 ver 0.16
 ++++++++++
 1. Updated the portfolio code from '12306' to '12404' in function map_portfolio_id()
