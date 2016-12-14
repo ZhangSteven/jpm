@@ -23,11 +23,20 @@ To run unit test, run
 Todo
 ++++++++++
 
-1. Since trade_converter established a lookup from isin to ticker, consider to make the lookup an independent module, then we can do:
 
-	a. tell whether the holding is an equity based on: has an isin, but no coupon rate and maturity date.
 
-	b. lookup geneva investment id from there.
+
+++++++++++
+ver 0.19
+++++++++++
+1. The csv output filename solely depends on the input directory folder name, and will always contains 'jpm'. If the folder name is "ListCo Equity", then output listco_equity_jpm_*.csv, if the input directory ends with "CLO Equity", then output clo_equity_jpm_*.csv.
+
+
+
+++++++++++
+ver 0.18
+++++++++++
+1. The csv output filename now depends on the input directory, if the input directory ends with "ListCo Equity", then output listco_equity_*.csv, if the input directory ends with "CLO Equity", then output clo_equity_*.csv, else output jpm_*.csv.
 
 
 

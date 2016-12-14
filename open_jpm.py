@@ -801,13 +801,12 @@ def get_prefix_from_dir(input_dir):
 	"""
 	Work out a prefix for the filename depending on the input directory.
 	"""
-	token = input_dir.split('\\')[-1]
-	if token.lower() == 'listco equity':
-		return 'listco_equity'
-	elif token.lower() == 'clo equity':
-		return 'clo_equity'
-	else:
-		return 'jpm'
+	folder_name = input_dir.split('\\')[-1]
+	prefix = ''
+	for token in folder_name.lower().split():
+		prefix = prefix + token + '_'
+
+	return prefix + 'jpm_'
 
 
 
@@ -817,7 +816,7 @@ def create_csv_file_name(date_string, file_suffix):
 	the file suffix: cash, afs_positions, or htm_positions
 	"""
 	input_dir = get_input_directory()
-	csv_file = input_dir + '\\' + get_prefix_from_dir(input_dir) + '_' + \
+	csv_file = input_dir + '\\' + get_prefix_from_dir(input_dir) + \
 				date_string + '_' + file_suffix + '.csv'
 	return csv_file
 
