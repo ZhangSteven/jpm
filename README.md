@@ -25,6 +25,12 @@ Todo
 
 
 
+++++++++++
+ver 0.1901
+++++++++++
+1. Change config file so that input directory is for office PC, previously it was for hong kong home laptop.
+
+
 
 ++++++++++
 ver 0.19
