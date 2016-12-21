@@ -810,35 +810,33 @@ def get_prefix_from_dir(input_dir):
 
 
 
-def create_csv_file_name(date_string, file_suffix, output_dir):
+def create_csv_file_name(date_string, output_dir, file_prefix, file_suffix):
 	"""
 	Create the output csv file name based on the date string, as well as
 	the file suffix: cash, afs_positions, or htm_positions
 	"""
-	if output_dir is None:
-		output_dir = get_input_directory()
-
-	csv_file = output_dir + '\\' + get_prefix_from_dir(output_dir) + \
-				date_string + '_' + file_suffix + '.csv'
+	csv_file = output_dir + '\\' + file_prefix + date_string + '_' + \
+				file_suffix + '.csv'
 	return csv_file
 
 
 
-def write_csv(port_values, output_dir=None):
+def write_csv(port_values, output_dir=get_input_directory(), \
+				file_prefix=get_prefix_from_dir(get_input_directory())):
 	"""
 	Write cash and holdings into csv files.
 	"""	
 	# cash_file = get_input_directory() + '\\cash.csv'
-	write_cash_csv(port_values, output_dir)
+	write_cash_csv(port_values, output_dir, file_prefix)
 
 	# holding_file = get_input_directory() + '\\holding.csv'
-	write_holding_csv(port_values, output_dir)
+	write_holding_csv(port_values, output_dir, file_prefix)
 
 
 
-def write_cash_csv(port_values, output_dir):
+def write_cash_csv(port_values, output_dir, file_prefix):
 	portfolio_date = get_portfolio_date_as_string(port_values)
-	cash_file = create_csv_file_name(portfolio_date, 'cash', output_dir)
+	cash_file = create_csv_file_name(portfolio_date, output_dir, file_prefix, 'cash')
 
 	with open(cash_file, 'w', newline='') as csvfile:
 		logger.debug('write_cash_csv(): {0}'.format(cash_file))
@@ -864,9 +862,9 @@ def write_cash_csv(port_values, output_dir):
 
 
 
-def	write_holding_csv(port_values, output_dir):
+def	write_holding_csv(port_values, output_dir, file_prefix):
 	portfolio_date = get_portfolio_date_as_string(port_values)
-	holding_file = create_csv_file_name(portfolio_date, 'position', output_dir)
+	holding_file = create_csv_file_name(portfolio_date, output_dir, file_prefix, 'position')
 
 	with open(holding_file, 'w', newline='') as csvfile:
 		logger.debug('write_holding_csv(): {0}'.format(holding_file))

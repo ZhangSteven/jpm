@@ -26,6 +26,13 @@ Todo
 
 
 ++++++++++
+ver 0.21
+++++++++++
+1. Bug fix: filename prefix now depends on the input directory instead of the output directory, so that jpm files from different input directories won't overwrite with each other.
+
+
+
+++++++++++
 ver 0.20
 ++++++++++
 1. Add an output directory parameter to the write_csv() function, so that it can write to a different directory than the input directory. If the output directory is None (default), then it still writes to the input directory where the input files are read. This way it remains backward compatible to 0.19 if running in standalone mode. (Python open_jpm.py <input_file>)
