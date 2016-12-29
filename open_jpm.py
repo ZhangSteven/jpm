@@ -826,11 +826,9 @@ def write_csv(port_values, output_dir=get_input_directory(), \
 	"""
 	Write cash and holdings into csv files.
 	"""	
-	# cash_file = get_input_directory() + '\\cash.csv'
-	write_cash_csv(port_values, output_dir, file_prefix)
-
-	# holding_file = get_input_directory() + '\\holding.csv'
-	write_holding_csv(port_values, output_dir, file_prefix)
+	cash_file = write_cash_csv(port_values, output_dir, file_prefix)
+	holding_file = write_holding_csv(port_values, output_dir, file_prefix)
+	return [cash_file, holding_file]
 
 
 
@@ -859,6 +857,8 @@ def write_cash_csv(port_values, output_dir, file_prefix):
 					row.append(position[fld])
 
 				file_writer.writerow(row)
+
+	return cash_file
 
 
 
@@ -915,6 +915,7 @@ def	write_holding_csv(port_values, output_dir, file_prefix):
 
 				file_writer.writerow(row)
 
+	return holding_file
 
 
 

@@ -26,6 +26,13 @@ Todo
 
 
 ++++++++++
+ver 0.22
+++++++++++
+1. Change the write_csv() function to return the list of output csv files. This is needed by the recon_helper package.
+
+
+
+++++++++++
 ver 0.21
 ++++++++++
 1. Bug fix: filename prefix now depends on the input directory instead of the output directory, so that jpm files from different input directories won't overwrite with each other.
