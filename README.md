@@ -33,6 +33,13 @@ ver 0.22
 
 
 ++++++++++
+ver 0.22
+++++++++++
+1. We realized that in JPM file from China Life trustee, portfolio 11493 is actually HTM bond portfolio 12548, the mapping is corrected in the code.
+
+
+
+++++++++++
 ver 0.21
 ++++++++++
 1. Bug fix: filename prefix now depends on the input directory instead of the output directory, so that jpm files from different input directories won't overwrite with each other.
