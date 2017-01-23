@@ -26,6 +26,13 @@ Todo
 
 
 ++++++++++
+ver 0.23
+++++++++++
+1. Portfolio code mapping is updated based on Kathleen's input.
+
+
+
+++++++++++
 ver 0.22
 ++++++++++
 1. Change the write_csv() function to return the list of output csv files. This is needed by the recon_helper package.

@@ -755,15 +755,17 @@ def map_portfolio_id(account_code):
 	if account_code == '48029':
 		return '11490'
 	elif account_code == '48089':
-		return '11491'
+		return '12341'
 	elif account_code == '48090':
-		return '11492'
+		return '12298'
 	elif account_code == '48195':	# CLO trustee's bond fund
 		return '12548'
 	elif account_code == '53412':
-		return '11493'
+		return '12857'
 	elif account_code == '53413':
-		return '11494'
+		return '12856'
+	elif account_code == '48194':
+		return '12726'
 
 	# China Life ListCo accounts
 	elif account_code == 'AFU34':
