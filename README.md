@@ -26,6 +26,13 @@ Todo
 
 
 ++++++++++
+ver 0.24
+++++++++++
+1. account_begins() is updated so that the program won't treat 'Account:' in page 2 of the broker statement as the start of a account information.
+
+
+
+++++++++++
 ver 0.23
 ++++++++++
 1. Portfolio code mapping is updated based on Kathleen's input.

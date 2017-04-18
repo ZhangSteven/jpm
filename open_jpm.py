@@ -171,9 +171,17 @@ def extract_account_info(account_info):
 
 
 
-def account_begins(cell_value):
-	if isinstance(cell_value, str) and cell_value.startswith('Account:'):
+# def account_begins(cell_value):
+# 	if isinstance(cell_value, str) and cell_value.startswith('Account:'):
+# 		return True
+
+def account_begins(ws, row):
+	cell_value = ws.cell_value(row, 0)
+	if isinstance(cell_value, str) and cell_value.startswith('Account:') \
+		and len(cell_value) > 10:
 		return True
+	else:
+		return False
 
 
 
@@ -185,8 +193,10 @@ def read_account(ws, row, port_values):
 
 	while (row+rows_read < ws.nrows):
 
-		cell_value = ws.cell_value(row+rows_read, 0)
-		if account_begins(cell_value):
+		# cell_value = ws.cell_value(row+rows_read, 0)
+		# if account_begins(cell_value):
+		# 	break
+		if account_begins(ws, row+rows_read):
 			break
 
 		rows_read = rows_read + 1
@@ -195,7 +205,9 @@ def read_account(ws, row, port_values):
 	if row+rows_read >= ws.nrows:	# reaches end of file
 		return rows_read
 
-	account_code, account_name = extract_account_info(cell_value)
+	logger.debug('read_account(): at row {0}'.format(row+rows_read))
+	# account_code, account_name = extract_account_info(cell_value)
+	account_code, account_name = extract_account_info(ws.cell_value(row+rows_read, 0))
 	account = {}
 	accounts = retrieve_or_create(port_values, 'accounts')
 	accounts.append(account)
@@ -225,8 +237,11 @@ def read_account(ws, row, port_values):
 	elif isinstance(cell_value, str) and cell_value == 'No Data for this Account':
 		rows_read = rows_read + 1
 
-	elif account_begins(cell_value):	# the next account begins
+	# elif account_begins(cell_value):	# the next account begins
+	# 	pass
+	elif account_begins(ws, row+rows_read):
 		pass
+
 	else:
 		logger.error('read_account(): unexpected sub section in row {0}'.
 						format(row+rows_read))
@@ -530,8 +545,10 @@ def read_cash(ws, row, cash):
 		while (is_blank_line(ws, row+rows_read)):
 			rows_read = rows_read + 1
 		
-		cell_value = ws.cell_value(row+rows_read, 0)
-		if account_begins(cell_value):
+		# cell_value = ws.cell_value(row+rows_read, 0)
+		# if account_begins(cell_value):
+		# 	break
+		if account_begins(ws, row+rows_read):
 			break
 
 		# try:
