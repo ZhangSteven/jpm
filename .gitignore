@@ -3,3 +3,6 @@ __pycache__/
 
 # ignore the log file
 jpm.log
+
+# ignore the output .cvs files
+*.csv
