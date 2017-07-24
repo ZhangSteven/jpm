@@ -20,8 +20,9 @@ To run unit test, run
 
 
 ++++++++++
-Todo
+ver 0.241
 ++++++++++
+1. Changed test_jpm_error.py, test_read_jpm_error2() function, changed the output to the csv generated so that the test code still works after migrating to another machine.
 
 
 

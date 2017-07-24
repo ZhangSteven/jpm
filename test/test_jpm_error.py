@@ -3,7 +3,7 @@ Test the open_jpm.py
 """
 
 import unittest2
-import datetime
+import datetime, os
 from xlrd import open_workbook
 from jpm.utility import get_current_path
 from jpm.open_jpm import read_jpm, read_date, InconsistentSubtotal, write_csv, \
@@ -104,4 +104,4 @@ class TestJPM(unittest2.TestCase):
 
         with self.assertRaises(InvestmentIdNotFound):
             read_jpm(ws, port_values)
-            write_csv(port_values)
+            write_csv(port_values, os.path.join(get_current_path(), 'samples'))
