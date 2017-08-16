@@ -5,7 +5,6 @@
 # 
 
 import configparser, os
-from config_logging.file_logger import get_file_logger
 
 # def get_current_path():
 # 	"""
@@ -144,32 +143,6 @@ def _load_config(filename='jpm.config'):
 # initialized only once when this module is first imported by others
 if not 'config' in globals():
 	config = _load_config()
-
-
-
-def get_base_directory():
-	"""
-	The directory where the log file resides.
-	"""
-	global config
-	directory = config['logging']['directory']
-	if directory == '':
-		directory = get_current_path()
-
-	return directory
-
-
-
-def _setup_logging():
-    fn = get_base_directory() + '\\' + config['logging']['log_file']
-    log_level = config['logging']['log_level']
-    return get_file_logger(fn, log_level)
-
-
-
-# initialized only once when this module is first imported by others
-if not 'logger' in globals():
-	logger = _setup_logging()
 
 
 

@@ -8,9 +8,11 @@ from xlrd import open_workbook
 from xlrd.xldate import xldate_as_datetime
 import datetime, csv, os
 from jpm.utility import get_datemode, retrieve_or_create, \
-						get_current_path, logger, get_input_directory
+						get_current_path, get_input_directory
 from investment_lookup.id_lookup import get_investment_Ids, \
 										lookup_investment_currency
+import logging
+logger = logging.getLogger(__name__)
 
 
 
@@ -939,7 +941,9 @@ def	write_holding_csv(port_values, output_dir, file_prefix):
 
 
 if __name__ == '__main__':
-	import sys
+	import sys, logging.config
+	logging.config.fileConfig('logging.config', disable_existing_loggers=False)
+	
 	if len(sys.argv) < 2:
 		print('use python open_jpm.py <input_file>')
 		sys.exit(1)

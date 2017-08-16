@@ -19,6 +19,14 @@ To run unit test, run
 	nose2
 
 
+
+++++++++++
+ver 0.25@2017-8-16
+++++++++++
+1. Changed to use standard logging.
+
+
+
 ++++++++++
 ver 0.241
 ++++++++++
