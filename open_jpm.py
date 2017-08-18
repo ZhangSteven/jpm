@@ -792,9 +792,9 @@ def map_portfolio_id(account_code):
 	elif account_code == 'AFU35':
 		return '12307'
 	elif account_code == 'BBK32':
-		return '12308'
+		return '12094'
 	elif account_code == 'AFU37':
-		return '12309'
+		return '12086'
 
 	else:
 		logger.error('map_portfolio_id(): invalid account code {0}'.
@@ -916,6 +916,14 @@ def	write_holding_csv(port_values, output_dir, file_prefix):
 					security_id = position['isin']
 
 				investment_ids = get_investment_Ids(portfolio_id, security_id_type, security_id)
+				
+				# For portfolio 12404, give special treatment for this position: 
+				# SINO-OCEAN GROUP HOLDING LTD COMMON STOCK HKD 0
+				# with isin = 'HK3377040226'. Although it is a common stock, however, it is
+				# setup as a private security in Geneva due to special accounting treatment.
+				if portfolio_id == '12404' and investment_ids == ('', 'HK3377040226', ''):
+					investment_ids = ('SINO OCEAN LAND_DUMMY', '', '')
+
 				for id in investment_ids:
 					row.append(id)
 

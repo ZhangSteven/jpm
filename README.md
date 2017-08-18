@@ -21,6 +21,13 @@ To run unit test, run
 
 
 ++++++++++
+ver 0.26@2017-8-18
+++++++++++
+1. Changed open_jpm.py write_holding_csv() function, add a special treatment for portfolio 12404, holding SINO-OCEAN GROUP HOLDING LTD COMMON STOCK HKD 0 with isin = 'HK3377040226'. This is because in Geneva the position is setup as a private equity due to special accounting treatment for that position. (holding 20% of total issued shares)
+
+
+
+++++++++++
 ver 0.25@2017-8-16
 ++++++++++
 1. Changed to use standard logging.
