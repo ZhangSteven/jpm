@@ -19,6 +19,12 @@ To run unit test, run
 	nose2
 
 
+++++++++++
+ver 0.27@2017-11-10
+++++++++++
+1. Changed map_portfolio_id() function to add portfolio code '12087'.
+
+
 
 ++++++++++
 ver 0.26@2017-8-18
