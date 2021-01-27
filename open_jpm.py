@@ -921,8 +921,12 @@ def	write_holding_csv(port_values, output_dir, file_prefix):
 					security_id_type = 'ISIN'
 					security_id = position['isin']
 
-				investment_ids = get_investment_Ids(portfolio_id, security_id_type, security_id)
+				try:
+					investment_ids = get_investment_Ids(portfolio_id, security_id_type, security_id)
 				
+				except:
+					investment_ids = ('', 'MISSING_ISIN', '')
+
 				# For portfolio 12404, give special treatment for this position: 
 				# SINO-OCEAN GROUP HOLDING LTD COMMON STOCK HKD 0
 				# with isin = 'HK3377040226'. Although it is a common stock, however, it is
