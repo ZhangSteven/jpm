@@ -801,6 +801,10 @@ def map_portfolio_id(account_code):
 		return '12402'
 	elif account_code == 'EUK65':
 		return '12403'
+	elif account_code == 'EWU12':
+		return '70001'
+	elif account_code == 'EWU13':
+		return '70002-A'
 
 	else:
 		logger.error('map_portfolio_id(): invalid account code {0}'.
